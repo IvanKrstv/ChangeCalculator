@@ -1,33 +1,31 @@
 import flet as ft
-
 from ChangeCalculator import ChangeCalculator
+
 
 CURRENCIES = ("BGN", "EUR")
 DEFAULT_CURRENCY = CURRENCIES[0] # BGN
+CONVERSION = {
+    'EUR': ChangeCalculator.convert_bgn_to_eur,
+    'BGN': ChangeCalculator.convert_eur_to_bgn
+}
+
 
 def main(page: ft.Page):
-    # currency_total = DEFAULT_CURRENCY
-    # currency_payment_amount = DEFAULT_CURRENCY
-    # currency_change = DEFAULT_CURRENCY
+    # Logic
+    def update_currency(e, amount: ft.TextField, currency: str) -> None:
+        if currency == amount.data:
+            return
 
-    def update_currency_bgn_to_eur(e, amount: ft.TextField):
-        money_in_bgn = float(amount.value) if amount.value else 0.0
+        money = float(amount.value) if amount.value else 0.0
+        converted_money = CONVERSION[currency](money)
 
-        money_in_eur = ChangeCalculator.convert_bgn_to_eur(money_in_bgn)
-        amount.value = f"{money_in_eur:.2f}"
+        amount.value = f"{converted_money:.2f}"
+        amount.data = currency
+
         page.update()
 
-    def update_currency_eur_to_bgn(e, amount: ft.TextField):
-        money_in_eur = float(amount.value) if amount.value else 0.0
 
-        money_in_bgn = ChangeCalculator.convert_eur_to_bgn(money_in_eur)
-        amount.value = f"{money_in_bgn:.2f}"
-        page.update()
-
-    # TODO: the 2 functions can be coded into 1 with dictionary?
-
-
-    def update(e):
+    def update_change(e) -> None:
         total = float(total_input.value) if total_input.value else 0.0
         payment_amount = float(payment_amount_input.value) if payment_amount_input.value else 0.0
 
@@ -37,50 +35,59 @@ def main(page: ft.Page):
 
 
 
+    def create_bgn_button(textfield: ft.TextField) -> ft.Button:
+        return ft.Button(
+            content="BGN",
+            on_click=lambda e: update_currency(e, amount=textfield, currency="BGN")
+        )
+
+    def create_eur_button(textfield: ft.TextField) -> ft.Button:
+        return ft.Button(
+            content="EUR",
+            bgcolor=ft.Colors.BLUE_100,
+            on_click=lambda e: update_currency(e, amount=textfield, currency="EUR")
+        )
+
+    # Row with BGN EUR buttons for the user to choose from
+    def currency_row(textfield: ft.TextField) -> ft.Row:
+        return ft.Row(
+            controls=[
+                create_bgn_button(textfield),
+                create_eur_button(textfield)
+            ]
+        )
+
+
     # UI components
     page.title = "Change Calculator"
 
-    welcome_message = ft.Text(value="BGN to EUR change calculator")
+    welcome_message = ft.Text(
+        value="BGN to EUR change calculator",
+        size=20
+    )
 
-
-    def create_bgn_button(textfield: ft.TextField):
-        return ft.Button(
-            content="BGN",
-            on_click=lambda e: update_currency_eur_to_bgn(e, amount=textfield)
-        )
-
-    def create_eur_button(textfield: ft.TextField):
-        return ft.Button(
-            content="EUR",
-            on_click=lambda e: update_currency_bgn_to_eur(e, amount=textfield)
-        )
-
-
-    # Row with BGN EUR buttons for the user to choose from
-    # currency_row = ft.Row(
-    #     controls=[
-    #         create_bgn_button,
-    #         create_eur_button
-    #     ]
-    # )
-
-
+    # The value of the total bill, default currency = EUR
     total_input = ft.TextField(
         label="Total",
         keyboard_type=ft.KeyboardType.NUMBER,
-        on_change=update
+        on_change=update_change,
+        data="EUR"
     )
 
+    # The value of the payment amount, default currency = BGN
     payment_amount_input = ft.TextField(
         label="Payment amount",
         keyboard_type=ft.KeyboardType.NUMBER,
-        on_change=update
+        on_change=update_change,
+        data=DEFAULT_CURRENCY
     )
 
+    # The calculated value of the change, default currency = EUR
     change_output = ft.TextField(
         label="Change",
         value="0.00",
-        read_only=True
+        read_only=True,
+        data="EUR"
     )
 
 
@@ -91,22 +98,19 @@ def main(page: ft.Page):
         ),
 
         ft.Row(
-            # controls=[ft.TextField(label="Total", keyboard_type=ft.KeyboardType.NUMBER)]
             controls=[total_input]
         ),
-        currency_row,
+        currency_row(total_input),
 
         ft.Row(
-            # controls=[ft.TextField(label="Payment amount", keyboard_type=ft.KeyboardType.NUMBER)]
             controls=[payment_amount_input]
         ),
-        currency_row,
+        currency_row(payment_amount_input),
 
         ft.Row(
-            # controls=[ft.TextField(label="Change", value=str(1), read_only=True)]
             controls=[change_output]
         ),
-        currency_row
+        currency_row(change_output)
     )
 
     # counter = ft.Text("0", size=50, data=0)
